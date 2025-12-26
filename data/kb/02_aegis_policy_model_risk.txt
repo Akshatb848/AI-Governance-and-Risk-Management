@@ -1,0 +1,5 @@
+AEGIS Model Risk & Governance (MVP)
+- Fairness: compute Disparate Impact (selection rate ratio). Flag FAIL if DI < 0.80.
+- Drift: use mean shift on top numeric features; flag REVIEW if drift score > 0.35 (heuristic).
+- Explainability: produce global feature importance (SHAP) and store evidence artifacts.
+- Document evidence + control outcomes; generate an audit PDF and trace logs for auditability.

@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Streamlit
+.streamlit/
+
+# Colab / misc
+*.log
+.DS_Store
+Thumbs.db
+
+# Outputs & artifacts (do NOT push)
+outputs/
+**/outputs/
+**/runs/
+**/*.pdf
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/chroma*/
+**/vectorstore*/
+**/agent_outputs/
+
+# Data that may contain client info
+uploads/
+data/uploads/

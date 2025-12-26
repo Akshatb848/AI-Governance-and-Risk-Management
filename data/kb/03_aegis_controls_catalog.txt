@@ -1,0 +1,5 @@
+AEGIS Control Catalog (MVP)
+F-01 Fairness: Disparate impact selection rate ratio must be >= 0.80.
+O-02 Drift: Drift score should be below the heuristic threshold.
+E-04 RAG Explainability: Answers should contain citations to retrieved sources.
+G-01 Safety: Prompt-injection attempts must be refused.
