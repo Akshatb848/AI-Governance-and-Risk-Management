@@ -1,0 +1,16 @@
+{
+  "method": "relative mean shift, train vs test split, top 10 numeric features",
+  "drift_score_mean_top10": 0.06512689140933928,
+  "top": {
+    "area error": 0.11840530987118567,
+    "worst concavity": 0.0790626320360111,
+    "concavity error": 0.07383850639469317,
+    "mean radius": 0.06902652641757505,
+    "radius error": 0.062328058044072036,
+    "mean concave points": 0.058449829269983135,
+    "perimeter error": 0.057670683443348296,
+    "concave points error": 0.04831880755075516,
+    "symmetry error": 0.0474179600226202,
+    "worst area": 0.03675060104314888
+  }
+}

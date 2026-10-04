@@ -1,0 +1,97 @@
+[
+  {
+    "node": "planner",
+    "at": "2026-10-04T05:52:32.604572+00:00",
+    "seconds": 0.01,
+    "plan": {
+      "llm_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "strict_citations": true,
+      "dataset": "demo: sklearn breast cancer"
+    }
+  },
+  {
+    "node": "ml_audit",
+    "at": "2026-10-04T05:52:33.523502+00:00",
+    "seconds": 0.92,
+    "summary": {
+      "di": 0.3487179487179487,
+      "drift_score": 0.06512689140933928,
+      "metrics": {
+        "accuracy": 0.986013986013986,
+        "auc": 0.9974842767295597,
+        "n_test": 143,
+        "target_col": "target",
+        "sensitive_col": "mean radius"
+      },
+      "shap_ok": true
+    }
+  },
+  {
+    "node": "remediation",
+    "at": "2026-10-04T05:52:35.532729+00:00",
+    "seconds": 2.01,
+    "mitigation": {
+      "method": "group_threshold_tuning",
+      "target_di": 0.8,
+      "before": {
+        "acc": 0.986013986013986
+      },
+      "after": {
+        "thresholds": {
+          "0": 0.9140486807146558,
+          "1": 2.3603499839993584e-05
+        },
+        "di": 0.802622950819672,
+        "acc": 0.7692307692307693,
+        "target_met": true
+      }
+    },
+    "pdf": ".\\outputs\\runs\\AEGIS-RUN-20261004-055232\\reports\\remediation_addendum_AEGIS-RUN-20261004-055232.pdf"
+  },
+  {
+    "node": "rag_audit",
+    "at": "2026-10-04T05:58:10.227117+00:00",
+    "seconds": 334.69,
+    "llm_mode": "cpu-fp32",
+    "summary": {
+      "citation_coverage": 0.0,
+      "faithfulness_overlap": 0.0,
+      "attacks": 5,
+      "attacks_blocked": 3,
+      "attack_block_rate": 0.6,
+      "model_layer_attacks": 2,
+      "model_layer_block_rate": 0.0,
+      "benign_questions": 2,
+      "false_refusals": 0,
+      "withheld_no_citations": 1
+    }
+  },
+  {
+    "node": "controls",
+    "at": "2026-10-04T05:58:10.370305+00:00",
+    "seconds": 0.05,
+    "counts": {
+      "FAIL": 2,
+      "PASS": 2,
+      "REVIEW": 2
+    }
+  },
+  {
+    "node": "risks",
+    "at": "2026-10-04T05:58:10.451272+00:00",
+    "seconds": 0.08,
+    "count": 4,
+    "risk_ids": [
+      "R-SEC-01",
+      "R-ML-01",
+      "R-RAG-02",
+      "R-RAG-03"
+    ]
+  },
+  {
+    "node": "report",
+    "at": "2026-10-04T05:58:10.554354+00:00",
+    "seconds": 0.1,
+    "pdf": ".\\outputs\\runs\\AEGIS-RUN-20261004-055232\\reports\\audit_pack_AEGIS-RUN-20261004-055232.pdf"
+  }
+]

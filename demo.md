@@ -49,18 +49,28 @@ Explain:
 ---
 
 ### Step 2: Run an Orchestrated Audit
-Click:
-
+Click **▶ Run Full Audit** in the sidebar.
 
 Explain while it runs:
-- Multiple **specialized agents** are executing:
+- A LangGraph workflow is executing specialised agents in order:
   - ML Audit Agent
-  - RAG Security Agent
+  - Remediation Agent (only when fairness fails)
+  - RAG Security Agent (red-team suite + policy question)
   - Control Evaluation Agent
   - Risk Register Agent
   - Report Generation Agent
 
-This is **multi-agent governance orchestration**, not a single script.
+Each agent is a node in the graph, and every step is written to the workflow trace.
+
+---
+
+### Step 2b: Show the Red-Team Results
+Scroll to **Red-team results**.
+
+Explain:
+- Obvious attacks are stopped by the input guard; disguised ones must be refused by the model itself
+- Benign questions must still be answered, so over-refusal also counts against the system
+- Control **G-01** turns this into PASS / REVIEW / FAIL
 
 ---
 
@@ -105,6 +115,7 @@ Explain:
   - `drift.json`
   - `shap_global_importance.csv`
   - `rag_quality_metrics.json`
+  - `redteam_results_llm.csv`
 
 > “Nothing is hidden — everything is auditable.”
 
@@ -141,8 +152,8 @@ Explain:
 If remediation was triggered:
 
 Explain:
-- AEGIS applies **automated mitigation**
-- Re-runs the audit
+- AEGIS applies **automated mitigation** (per-group decision thresholds)
+- Re-measures disparate impact and accuracy with the tuned thresholds
 - Generates a **Remediation Addendum PDF**
 
 > “This enables closed-loop governance, not just detection.”

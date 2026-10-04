@@ -1,0 +1,10 @@
+{
+  "attacks": 5,
+  "attacks_blocked": 3,
+  "attack_block_rate": 0.6,
+  "model_layer_attacks": 2,
+  "model_layer_block_rate": 0.0,
+  "benign_questions": 2,
+  "false_refusals": 0,
+  "withheld_no_citations": 1
+}

@@ -139,7 +139,9 @@ def run_ml_audit(evidence_dir: str, dataset_csv_path: str | None = None, target_
         "disparate_impact_selection_rate": di
     })
 
-    # Drift (simple: mean shift on numeric columns)
+    # Drift baseline: relative mean shift of numeric features between the train
+    # and test splits. With a real deployment, pass production data as the
+    # second sample instead; with one dataset this only checks split stability.
     drift_score = 0.0
     drift_top = {}
     if len(num_cols) > 0:
@@ -151,19 +153,21 @@ def run_ml_audit(evidence_dir: str, dataset_csv_path: str | None = None, target_
         drift_top = top10.to_dict()
 
     _save_json(os.path.join(evidence_dir, "drift.json"), {
+        "method": "relative mean shift, train vs test split, top 10 numeric features",
         "drift_score_mean_top10": drift_score,
         "top": drift_top
     })
 
-    # SHAP (on transformed data)
+    # SHAP global importance, computed with the model's own fitted preprocessor
+    shap_status = {"ok": False}
     try:
         Xbg = X_train.sample(min(100, len(X_train)), random_state=42)
         Xex = X_test.sample(min(25, len(X_test)), random_state=42)
 
-        Xt_bg = model.named_steps["pre"].fit_transform(Xbg)
+        Xt_bg = model.named_steps["pre"].transform(Xbg)
         Xt_ex = model.named_steps["pre"].transform(Xex)
 
-        explainer = shap.LinearExplainer(model.named_steps["clf"], Xt_bg, feature_perturbation="interventional")
+        explainer = shap.LinearExplainer(model.named_steps["clf"], shap.maskers.Independent(Xt_bg))
         sv = explainer.shap_values(Xt_ex)
         mean_abs = np.mean(np.abs(sv), axis=0)
 
@@ -179,9 +183,11 @@ def run_ml_audit(evidence_dir: str, dataset_csv_path: str | None = None, target_
         # safety: align lengths
         n = min(len(mean_abs), len(feat_names))
         imp = pd.Series(mean_abs[:n], index=feat_names[:n]).sort_values(ascending=False)
-        imp.to_csv(os.path.join(evidence_dir, "shap_global_importance.csv"))
-    except Exception:
-        # don't fail the whole run if SHAP breaks
-        pd.Series({"shap_error": 1}).to_csv(os.path.join(evidence_dir, "shap_global_importance.csv"))
+        imp.rename("mean_abs_shap").to_csv(os.path.join(evidence_dir, "shap_global_importance.csv"), index_label="feature")
+        shap_status = {"ok": True, "n_features": int(n), "top_feature": str(imp.index[0]) if n else None}
+    except Exception as e:
+        # don't fail the whole run if SHAP breaks; control E-01 reports it as FAIL
+        shap_status = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    _save_json(os.path.join(evidence_dir, "shap_status.json"), shap_status)
 
-    return {"di": di, "drift_score": drift_score, "metrics": metrics}
+    return {"di": di, "drift_score": drift_score, "metrics": metrics, "shap_ok": shap_status["ok"]}

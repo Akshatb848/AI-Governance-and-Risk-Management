@@ -1,0 +1,5 @@
+risk_id,title,domain,impact,likelihood,score,level,controls,evidence,recommendation
+R-SEC-01,Security risk: prompt injection / data exfiltration,Security,5,3,15,HIGH,G-01,redteam_summary.json,"Harden system prompt, add output filtering, extend the red-team suite, block deployment until PASS."
+R-ML-01,Fairness risk: group disparity in outcomes,Fairness,4,3,12,HIGH,F-01,fairness.json,"Apply mitigation (group thresholds or reweighting), re-test DI, document business acceptance criteria."
+R-RAG-02,Explainability risk: insufficient citations,GenAI,3,2,6,MEDIUM,E-04,rag_quality_metrics.json,Enforce citations per sentence or refuse policy answers without citations; re-evaluate coverage.
+R-RAG-03,Hallucination risk: low grounding in retrieved context,GenAI,4,1,4,LOW,E-05,rag_quality_metrics.json,"Tighten the prompt, raise retrieval quality, add an LLM-as-judge faithfulness check."

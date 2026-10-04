@@ -1,63 +1,64 @@
-import os, json
+import os
+import json
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
-from fairlearn.metrics import MetricFrame, selection_rate
+
 
 def _save_json(path, obj):
     with open(path, "w") as f:
         json.dump(obj, f, indent=2, default=str)
 
-def threshold_tune_groupwise(y_true, y_score, sensitive, target_di=0.80, grid=None):
-    if grid is None:
-        grid = np.linspace(0.05, 0.95, 37)
 
-    best = None
+def _di(pred, s, groups):
+    rates = [pred[s == g].mean() if (s == g).any() else 0.0 for g in groups]
+    return float(min(rates) / max(rates)) if max(rates) > 0 else 0.0
+
+
+def _candidates(scores):
+    """Thresholds at score quantiles plus the extremes, so every selection rate
+    from 0% to 100% is reachable even when scores are very confident."""
+    qs = np.quantile(scores, np.linspace(0, 1, 41))
+    return np.unique(np.concatenate([qs, [0.0, 1.0 + 1e-9]]))
+
+
+def threshold_tune_groupwise(y_true, y_score, sensitive, target_di=0.80):
+    """Pick one decision threshold per group. Among settings that reach the DI
+    target, keep the most accurate; if none reach it, keep the fairest."""
     s = np.asarray(sensitive).astype(int)
     y_true = np.asarray(y_true).astype(int)
     y_score = np.asarray(y_score).astype(float)
-
-    # supports multi-group by tuning a single threshold per group (simple)
     groups = np.unique(s)
-    if len(groups) == 2:
-        g0, g1 = groups[0], groups[1]
-        for t0 in grid:
-            for t1 in grid:
-                pred = np.zeros_like(y_true)
-                pred[s == g0] = (y_score[s == g0] >= t0).astype(int)
-                pred[s == g1] = (y_score[s == g1] >= t1).astype(int)
 
-                mf = MetricFrame(metrics={"sr": selection_rate}, y_true=y_true, y_pred=pred, sensitive_features=s)
-                sr0 = float(mf.by_group.loc[g0, "sr"])
-                sr1 = float(mf.by_group.loc[g1, "sr"])
-                di = float(min(sr0, sr1) / max(sr0, sr1)) if max(sr0, sr1) > 0 else 0.0
-                acc = float(accuracy_score(y_true, pred))
-
-                ok = di >= target_di
-                score = (1 if ok else 0) * 1000 + acc
-                cand = (score, di, acc, {int(g0): float(t0), int(g1): float(t1)})
-                if (best is None) or (cand[0] > best[0]):
-                    best = cand
-
+    if len(groups) != 2:
+        # multi-group fallback: one shared threshold
+        best = None
+        for t in _candidates(y_score):
+            pred = (y_score >= t).astype(int)
+            di, acc = _di(pred, s, groups), float(accuracy_score(y_true, pred))
+            key = (di >= target_di, acc if di >= target_di else di)
+            if best is None or key > best[0]:
+                best = (key, di, acc, {"shared": float(t)})
         _, di_best, acc_best, thr = best
-        return {"thresholds": thr, "di": float(di_best), "acc": float(acc_best)}
+        return {"thresholds": thr, "di": di_best, "acc": acc_best, "target_met": di_best >= target_di}
 
-    # multi-group fallback: single shared threshold
+    g0, g1 = groups
+    m0, m1 = s == g0, s == g1
     best = None
-    for t in grid:
-        pred = (y_score >= t).astype(int)
-        mf = MetricFrame(metrics={"sr": selection_rate}, y_true=y_true, y_pred=pred, sensitive_features=s)
-        sr = mf.by_group["sr"]
-        di = float(sr.min() / sr.max()) if float(sr.max()) > 0 else 0.0
-        acc = float(accuracy_score(y_true, pred))
-        ok = di >= target_di
-        score = (1 if ok else 0) * 1000 + acc
-        cand = (score, di, acc, {"shared": float(t)})
-        if (best is None) or (cand[0] > best[0]):
-            best = cand
-
+    for t0 in _candidates(y_score[m0]):
+        p0 = (y_score[m0] >= t0).astype(int)
+        for t1 in _candidates(y_score[m1]):
+            pred = np.zeros_like(y_true)
+            pred[m0] = p0
+            pred[m1] = (y_score[m1] >= t1).astype(int)
+            di, acc = _di(pred, s, groups), float(accuracy_score(y_true, pred))
+            key = (di >= target_di, acc if di >= target_di else di)
+            if best is None or key > best[0]:
+                best = (key, di, acc, {str(int(g0)): float(t0), str(int(g1)): float(t1)})
     _, di_best, acc_best, thr = best
-    return {"thresholds": thr, "di": float(di_best), "acc": float(acc_best)}
+    return {"thresholds": thr, "di": di_best, "acc": acc_best, "target_met": di_best >= target_di}
+
 
 def run_fairness_remediation(evidence_dir: str, target_di=0.80):
     scores_path = os.path.join(evidence_dir, "ml_eval_scores.csv")
@@ -65,8 +66,11 @@ def run_fairness_remediation(evidence_dir: str, target_di=0.80):
         return {"skipped": True, "reason": "ml_eval_scores.csv not found"}
 
     df = pd.read_csv(scores_path)
-    result = threshold_tune_groupwise(df["y_true"].values, df["y_score"].values, df["sensitive"].values, target_di=target_di)
+    before_acc = float(accuracy_score(df["y_true"], (df["y_score"] >= 0.5).astype(int)))
+    result = threshold_tune_groupwise(df["y_true"].values, df["y_score"].values, df["sensitive"].values,
+                                      target_di=target_di)
 
-    out = {"method": "group_threshold_tuning", "target_di": target_di, "after": result}
+    out = {"method": "group_threshold_tuning", "target_di": target_di,
+           "before": {"acc": before_acc}, "after": result}
     _save_json(os.path.join(evidence_dir, "fairness_mitigation.json"), out)
     return out

@@ -26,3 +26,12 @@ outputs/
 # Data that may contain client info
 uploads/
 data/uploads/
+
+# Local environments
+.venv/
+venv/
+.pytest_cache/
+
+# Committed sample output for the README (exceptions to the rules above)
+!docs/
+!docs/**

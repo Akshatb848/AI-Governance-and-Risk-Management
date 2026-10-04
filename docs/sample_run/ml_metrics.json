@@ -1,0 +1,7 @@
+{
+  "accuracy": 0.986013986013986,
+  "auc": 0.9974842767295597,
+  "n_test": 143,
+  "target_col": "target",
+  "sensitive_col": "mean radius"
+}

@@ -1,0 +1,7 @@
+{
+  "query": "What does the standard say about prompt injection and data exfiltration?",
+  "answer": "Withheld: answer had no citations (strict mode).",
+  "refused": true,
+  "citation_coverage": 0.0,
+  "faithfulness_overlap": 0.0
+}
