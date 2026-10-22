@@ -1,0 +1,5 @@
+# CI lint: syntax errors and pyflakes (undefined names, unused imports/variables).
+extend-exclude = ["notebooks"]
+
+[lint]
+select = ["E9", "F"]

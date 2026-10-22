@@ -1,5 +1,7 @@
 # AEGIS: AI Governance & Risk Management
 
+**Turn technical AI evaluation (fairness, drift, SHAP, RAG grounding, prompt-injection red-teaming) into the controls, risk register and audit-ready PDF a governance team signs off on.**
+
 [![tests](https://github.com/Akshatb848/AI-Governance-and-Risk-Management/actions/workflows/tests.yml/badge.svg)](https://github.com/Akshatb848/AI-Governance-and-Risk-Management/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
@@ -7,6 +9,12 @@
 AEGIS audits a tabular **ML classifier** and a **RAG (retrieval-augmented generation) assistant**, then converts the results into the artifacts a risk or compliance team uses: six **controls** (PASS / FAIL / REVIEW), a **risk register**, an **audit-pack PDF** and a step-by-step **trace** of how each conclusion was reached. The audit runs as a LangGraph workflow of single-purpose agents, using open-weights models from Hugging Face on your own machine. No API keys are needed.
 
 ![AEGIS dashboard after a full audit run](docs/screenshot.png)
+
+*Streamlit dashboard after a real run on the demo dataset with `Qwen/Qwen2.5-0.5B-Instruct` on CPU.*
+
+![Pages from the generated audit pack and remediation addendum](docs/audit_pack_preview.png)
+
+*Pages rendered from the PDFs that run produced ([audit pack](docs/sample_run/audit_pack.pdf), [remediation addendum](docs/sample_run/remediation_addendum.pdf)).*
 
 ## What it checks
 
@@ -43,6 +51,17 @@ flowchart LR
 
 Design details are in [architecture.md](architecture.md); a 5-minute walkthrough is in [demo.md](demo.md).
 
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Orchestration | LangGraph (state graph with a conditional remediation edge), LangChain core |
+| ML audit | scikit-learn, fairlearn, SHAP, pandas, NumPy |
+| RAG and red-team | Chroma, `sentence-transformers/all-MiniLM-L6-v2`, Hugging Face Transformers (local open-weights LLM, optional 4-bit via bitsandbytes) |
+| Reporting and storage | ReportLab (PDF), SQLite (run history) |
+| UI | Streamlit |
+| Quality | pytest (end-to-end with fakes), Ruff, GitHub Actions on Python 3.10 to 3.12 |
+
 ## Quick start
 
 Requires Python 3.10+.
@@ -72,6 +91,15 @@ from engine.orchestrator import run_aegis
 result = run_aegis(dataset_csv_path="loans.csv", target_col="approved", sensitive_col="gender")
 print(result["audit_pdf"], result["control_csv"])
 ```
+
+### Configuration
+
+No API keys are required. Two optional environment variables are read from the process environment (see [.env.example](.env.example)):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AEGIS_HOME` | repository root | Where `data/` and `outputs/` live |
+| `AEGIS_LLM_ID` | `Qwen/Qwen2.5-1.5B-Instruct` | Default Hugging Face model for the RAG assistant (also editable in the sidebar) |
 
 ### Outputs
 
@@ -113,6 +141,7 @@ The ML-stage figures are deterministic (fixed split seed). Re-running the pipeli
 ```bash
 pip install -r requirements-test.txt
 pytest -q tests
+ruff check .
 ```
 
 Result: `4 passed` (Python 3.11, about 10 s). The test requirements exclude PyTorch and model downloads: the tests run the complete LangGraph workflow with a fake LLM and retriever, and check that
@@ -122,7 +151,7 @@ Result: `4 passed` (Python 3.11, about 10 s). The test requirements exclude PyTo
 - a deliberately biased dataset fails F-01, triggers remediation and reaches DI >= 0.80;
 - the refusal detector does not mistake answers about refusal policy for refusals.
 
-The same command runs in GitHub Actions on every push.
+GitHub Actions runs the tests on Python 3.10, 3.11 and 3.12 plus a Ruff lint (syntax errors and pyflakes) on every push and pull request.
 
 ## Limitations and roadmap
 
@@ -156,8 +185,13 @@ data/kb/                       policy documents indexed for RAG
 docs/sample_run/               evidence and PDFs from a real run
 notebooks/                     original Colab prototype
 tests/                         end-to-end tests with fakes
+.github/workflows/tests.yml    CI: Ruff lint + pytest matrix
 ```
 
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+## Author
+
+**Akshat Banga** · AI Generalist, AI transformation · [GitHub @Akshatb848](https://github.com/Akshatb848)

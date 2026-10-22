@@ -35,3 +35,9 @@ venv/
 # Committed sample output for the README (exceptions to the rules above)
 !docs/
 !docs/**
+
+# Secrets and tool caches
+.env
+.env.*
+!.env.example
+.ruff_cache/
